@@ -26,6 +26,18 @@ export class FeatureFlag {
   @Column({ type: 'simple-array', nullable: true })
   userIds: string[];
 
+  @Column({ type: 'varchar', nullable: true })
+  lastChangedBy: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastChangedAt: Date;
+
+  @Column({ type: 'json', nullable: true })
+  rollbackMetadata: {
+    previousState: Record<string, any>;
+    timestamp: string;
+  } | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

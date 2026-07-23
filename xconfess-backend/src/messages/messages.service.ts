@@ -402,6 +402,56 @@ export class MessagesService {
     });
   }
 
+  /**
+   * Get inbox threads for a user.
+   * Delegates to findAllThreadsForUser.
+   */
+  async getInbox(userId: number): Promise<CursorPaginatedResponseDto<any>> {
+    const user = { id: userId } as User;
+    return this.findAllThreadsForUser(user, {});
+  }
+
+  /**
+   * Get a thread with participant verification.
+   * Delegates to findForConfessionThread.
+   */
+  async getThreadWithParticipantCheck(
+    threadId: string,
+    userId: number,
+  ): Promise<CursorPaginatedResponseDto<Message>> {
+    // threadId is the confessionId in our model
+    const user = { id: userId } as User;
+    return this.findForConfessionThread(threadId, '', user, {});
+  }
+
+  /**
+   * Delete a message thread for a user (soft-delete approach).
+   */
+  async deleteForUser(userId: number, threadId: string): Promise<{ message: string }> {
+    const userAnons = await this.userAnonRepo.find({
+      where: { userId },
+    });
+    const anonIds = userAnons.map((ua) => ua.anonymousUserId);
+
+    if (anonIds.length === 0) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    // Find messages in this thread that belong to the user's anonymous sessions
+    const messages = await this.messageRepository
+      .createQueryBuilder('message')
+      .where('message.confessionId = :threadId', { threadId })
+      .andWhere('message.senderId IN (:...anonIds)', { anonIds })
+      .getMany();
+
+    if (messages.length === 0) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    await this.messageRepository.remove(messages);
+    return { message: 'Thread deleted successfully' };
+  }
+
   private getRecipientEmail(anonymousUser: AnonymousUser): string | null {
     if (!anonymousUser) return null;
     const link = anonymousUser.userLinks?.[0];

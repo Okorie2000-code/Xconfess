@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
-import { EncryptionService } from './encryption.service';
-import { Confession } from '../confessions/confession.entity';
+import { EncryptionService } from '../encryption/encryption.service';
+import { AnonymousConfession } from '../confession/entities/confession.entity';
 
 export interface RotationResult {
   total: number;
@@ -17,8 +17,8 @@ export class KeyRotationService {
   private readonly logger = new Logger(KeyRotationService.name);
 
   constructor(
-    @InjectRepository(Confession)
-    private readonly confessionRepo: Repository<Confession>,
+    @InjectRepository(AnonymousConfession)
+    private readonly confessionRepo: Repository<AnonymousConfession>,
     private readonly encryptionService: EncryptionService,
   ) {}
 

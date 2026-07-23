@@ -136,6 +136,19 @@ export class AnonymousConfession {
   @Column({ name: 'publish_at', type: 'timestamp', nullable: true })
   publishAt: Date | null;
 
+  // Envelope encryption fields (used by KeyRotationService)
+  @Column({ type: 'text', nullable: true, name: 'encrypted_content' })
+  encryptedContent: string;
+
+  @Column({ type: 'text', nullable: true, name: 'wrapped_dek' })
+  wrappedDek: string;
+
+  @Column({ type: 'varchar', nullable: true, name: 'key_version' })
+  keyVersion: string;
+
+  @Column({ type: 'varchar', nullable: true, name: 'migration_status', default: 'pending' })
+  migrationStatus: string;
+
   get content(): string {
     return this.message;
   }

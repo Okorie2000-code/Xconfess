@@ -1284,6 +1284,52 @@ export class AuditLogService {
     };
   }
 
+  /**
+   * Get observability metrics for audit log health monitoring.
+   * Aggregates statistics and provides trend data.
+   */
+  async getObservabilityMetrics(startDate?: Date, endDate?: Date) {
+    try {
+      const stats = await this.getStatistics(startDate, endDate);
+
+      // Get recent activity counts by day
+      const dailyQuery = this.auditLogRepository
+        .createQueryBuilder('audit_log')
+        .select("DATE_TRUNC('day', audit_log.createdAt)", 'date')
+        .addSelect('COUNT(*)', 'count');
+
+      if (startDate) {
+        dailyQuery.andWhere('audit_log.createdAt >= :startDate', { startDate });
+      }
+      if (endDate) {
+        dailyQuery.andWhere('audit_log.createdAt <= :endDate', { endDate });
+      }
+
+      const dailyCounts = await dailyQuery
+        .groupBy("DATE_TRUNC('day', audit_log.createdAt)")
+        .orderBy('date', 'DESC')
+        .limit(30)
+        .getRawMany();
+
+      return {
+        totalLogs: stats.totalLogs,
+        actionTypeCounts: stats.actionTypeCounts,
+        dailyActivity: dailyCounts,
+        generatedAt: new Date().toISOString(),
+      };
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to get observability metrics: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return {
+        totalLogs: 0,
+        actionTypeCounts: [],
+        dailyActivity: [],
+        generatedAt: new Date().toISOString(),
+      };
+    }
+  }
+
   private resolveActor(dto: CreateAuditLogDto): AuditActor | null {
     if (dto.context?.actor?.id) {
       return dto.context.actor;

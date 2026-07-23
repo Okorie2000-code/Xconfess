@@ -283,6 +283,35 @@ export class UserService {
     }
   }
 
+  /**
+   * Get public profile for a user by ID.
+   */
+  async getPublicProfile(userId: string): Promise<any> {
+    return this.getProfileSummary(parseInt(userId, 10));
+  }
+
+  /**
+   * Update user settings.
+   */
+  async updateSettings(userId: number, settings: Record<string, unknown>): Promise<any> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    // Apply settings that match known user properties
+    if (typeof settings.username === 'string') user.username = settings.username as string;
+
+    await this.userRepository.save(user);
+    return { message: 'Settings updated successfully' };
+  }
+
+  /**
+   * Delete user account (performs deactivation for soft-delete).
+   */
+  async deleteAccount(userId: number): Promise<{ message: string }> {
+    await this.deactivateAccount(userId);
+    return { message: 'Account deleted successfully' };
+  }
+
   async consumeRecoveryCode(userId: number, code: string): Promise<boolean> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
